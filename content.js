@@ -1,69 +1,21 @@
 console.log("[FB Helper] Content script loaded");
 
-// Waits for a Marketplace image to appear in the DOM using MutationObserver
-function waitForImageMutation(timeout = 10000) {
-  console.log("[FB Helper] Waiting for Marketplace image to appear...");
-  return new Promise((resolve, reject) => {
-    const existingImage = document.querySelector('img[src*="scontent"]');
-    if (existingImage) {
-      console.log("[FB Helper] Marketplace image already present.");
-      resolve(existingImage);
-      return;
-    }
-
-    const observer = new MutationObserver((mutations, obs) => {
-      const image = document.querySelector('img[src*="scontent"]');
-      if (image) {
-        console.log("[FB Helper] Marketplace image detected via MutationObserver.");
-        obs.disconnect();
-        resolve(image);
-      }
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    setTimeout(() => {
-      observer.disconnect();
-      console.warn("[FB Helper] Timeout waiting for Marketplace image.");
-      reject(new Error("Timeout waiting for image"));
-    }, timeout);
-  });
-}
-
 let lastUrl = location.href;
 
 // Initial setup on page load
 function setup() {
   console.log("[FB Helper] Running setup...");
-  waitForImageMutation()
-    .then(() => {
-      console.log("[FB Helper] Image appeared, calling onPageChange...");
-      onPageChange();
-    })
-    .catch(err => {
-      console.warn("[FB Helper]", err.message);
-      console.log("[FB Helper] Calling onPageChange anyway (fallback)...");
-      onPageChange();
-    });
+  onPageChange();
 }
 
 setup();
 
-// Observe URL changes for SPA navigation in Facebook
+// Observe URL changes
 const urlObserver = new MutationObserver(() => {
   if (location.href !== lastUrl) {
     lastUrl = location.href;
     console.log("[FB Helper] URL changed to", lastUrl);
-
-    waitForImageMutation()
-      .then(() => {
-        console.log("[FB Helper] Image appeared after URL change, calling onPageChange...");
-        onPageChange();
-      })
-      .catch(() => {
-        console.log("[FB Helper] Image not found after URL change, calling onPageChange anyway...");
-        onPageChange();
-      });
+    onPageChange();
   }
 });
 
@@ -111,6 +63,7 @@ function createButton(url) {
 
   button.onclick = () => {
     console.log("[FB Helper] Copy button clicked.");
+    button.innerText = "⏳ Loading...";
     const media = getLargestVisibleMedia();
 
     if (!media) {
