@@ -29,8 +29,11 @@ function onPageChange() {
   console.log(`[FB Helper] onPageChange triggered. isListingPage: ${isListingPage}, buttonExists: ${!!existingButton}`);
 
   if (isListingPage && !existingButton) {
-    console.log("[FB Helper] Creating copy button...");
-    createButton(location.href);
+    console.log("[FB Helper] Waiting for Message button...");
+    observeForMessageButton((fallback) => {
+      console.log("[FB Helper] Creating copy button..." + (fallback ? " (floating fallback)" : ""));
+      createButton(location.href, fallback);
+    });
   } else if (!isListingPage && existingButton) {
     console.log("[FB Helper] Removing existing copy button...");
     existingButton.remove();
@@ -40,57 +43,68 @@ function onPageChange() {
 }
 
 // Create the floating copy button with clipboard functionality
-function createButton(url) {
+function createButton(url, forceFloating = false) {
   console.log("[FB Helper] Inside createButton function.");
 
   const button = document.createElement("button");
-  button.innerText = "📋 Copy Marketplace Info";
   button.className = "fb-copy-button";
+  button.type = "button";
+  button.setAttribute("title", "Copy Marketplace Link");
 
-  Object.assign(button.style, {
-    position: "fixed",
-    top: "80px",
-    right: "20px",
-    zIndex: 9999,
-    padding: "10px",
-    fontSize: "14px",
-    backgroundColor: "#1877F2",
-    color: "white",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-  });
+  // Try to place inline next to "Message" button unless forced to float
+  if (!forceFloating && placeCopyBtnNextToMsgBtn(button)) {
+    console.log("[FB Helper] Button added to the page (inline).");
+  } else {
+    document.body.appendChild(button);
+    button.classList.add("fb-copy-button-floating");
+    console.log("[FB Helper] Button added to the page (floating).");
+  }
 
   button.onclick = () => {
     console.log("[FB Helper] Copy button clicked.");
-    button.innerText = "⏳ Loading...";
+    button.disabled = true;
+
     const media = getLargestVisibleMedia();
 
     if (!media) {
       console.warn("[FB Helper] No visible media found to copy.");
-      button.innerText = "❌ No media found";
-      setTimeout(() => (button.innerText = "📋 Copy Marketplace Info"), 2000);
+      button.disabled = false;
       return;
     }
 
-    let text = `📦 Facebook Listing\nLink: ${url}\n`;
+    // Extract base URL up to /item/123/
+    const match = url.match(/^(https:\/\/www\.facebook\.com\/marketplace\/item\/\d+\/)/);
+    const baseUrl = match ? match[1] : url;
 
-    if (media.type === "video") {
-      text += `Video: ${media.src}`;
-    } else {
-      text += `Image: ${media.src}`;
-    }
+    let text = `<${baseUrl}>\n-# [Media](${media.src})`;
 
     navigator.clipboard.writeText(text).then(() => {
       console.log("[FB Helper] Text copied to clipboard:", text);
-      button.innerText = "✅ Copied!";
-      setTimeout(() => (button.innerText = "📋 Copy Marketplace Info"), 2000);
+      setTimeout(() => {
+        button.disabled = false;
+      }, 2000);
     });
   };
+}
 
+// Returns true if inline placement succeeded, false otherwise
+function placeCopyBtnNextToMsgBtn(svg) {
+  const messageDiv = document.querySelector('div[aria-label="Message"]');
+  if (!messageDiv) return false;
 
-  document.body.appendChild(button);
-  console.log("[FB Helper] Copy button added to the page.");
+  // Traverse up to 5 ancestors to find a flex parent
+  let current = messageDiv;
+  for (let i = 0; i < 5; i++) {
+    const parent = current.parentElement;
+    if (!parent) break;
+    if (window.getComputedStyle(parent).display === "flex") {
+      svg.classList.add("fb-copy-svg-btn-inline");
+      parent.insertBefore(svg, current);
+      return true;
+    }
+    current = parent;
+  }
+  return false;
 }
 
 function getLargestVisibleMedia() {
@@ -123,6 +137,36 @@ function getLargestVisibleMedia() {
     console.warn("[FB Helper] No visible media found.");
     return null;
   }
+}
+
+function observeForMessageButton(callback, timeoutMs = 10000) {
+  // TEMP: Always trigger fallback for testing
+  // callback(true); // true = fallback to floating
+
+  // If already present, call immediately (inline placement)
+  if (document.querySelector('div[aria-label="Message"]')) {
+    callback(false); // false = not fallback
+    return;
+  }
+
+  let didTimeout = false;
+  const timeout = setTimeout(() => {
+    didTimeout = true;
+    observer.disconnect();
+    callback(true); // true = fallback to floating
+  }, timeoutMs);
+
+  const observer = new MutationObserver(() => {
+    if (document.querySelector('div[aria-label="Message"]')) {
+      clearTimeout(timeout);
+      if (!didTimeout) {
+        observer.disconnect();
+        callback(false); // false = not fallback
+      }
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
 }
 
 

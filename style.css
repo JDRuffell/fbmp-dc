@@ -1,17 +1,38 @@
 .fb-copy-button {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #1877f2;
-  color: white;
-  border: none;
-  padding: 12px 18px;
-  font-size: 16px;
+  width: 48px;
+  height: 36px;
+  background-color: #5662f6;
+  color: #fff;
   border-radius: 8px;
   cursor: pointer;
-  z-index: 9999;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  margin-right: 8px;
+  border: none;
+  background-image: 
+    url('copy-icon-16.png'), /* topmost (copy symbol) */
+    url('discord-icon-16.png'); /* bottom (discord logo) */
+  background-position: 
+    top right, 
+    center;
+  background-size: 
+    16px 16px, 
+    20px 20px;
+  background-repeat: 
+    no-repeat, 
+    no-repeat;
 }
-.fb-copy-button:hover {
-  background: #165cdb;
+
+.fb-copy-button-floating {
+  position: fixed;
+  right: 16px;
+  top: 70px;
+  z-index: 1000;
+}
+
+.fb-copy-button:hover,
+.fb-copy-button:focus {
+  background-color: #6d77fa;
+}
+
+.fb-copy-button:active {
+  transform: scale(0.96);
 }
