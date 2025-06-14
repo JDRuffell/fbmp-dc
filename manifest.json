@@ -3,18 +3,44 @@
   "name": "Facebook Marketplace Discord Copier",
   "version": "1.0",
   "description": "Copy a marketplace listing to your clipboard in a format that looks faux-embed since facebook does not embed any links.",
-  "permissions": ["clipboardWrite"],
+  "permissions": [
+    "clipboardWrite"
+  ],
   "host_permissions": [
     "https://www.facebook.com/marketplace/*"
   ],
   "content_scripts": [
     {
-      "matches": ["https://www.facebook.com/marketplace/*"],
-      "js": ["content.js"],
-      "css": ["style.css"]
+      "matches": [
+        "https://www.facebook.com/marketplace/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "style.css"
+      ]
     }
   ],
   "icons": {
     "48": "icon.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icon.png",
+        "discord-icon-16.png",
+        "copy-icon-16.png"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "fbmp-dc@johninatoooor.com",
+      "strict_min_version": "58.0"
+    }
   }
 }

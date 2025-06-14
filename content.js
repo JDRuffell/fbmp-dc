@@ -1,16 +1,8 @@
-console.log("[FB Helper] Content script loaded");
+// ==UserScript== or extension content script
 
+// 1. Constants and configuration
 let lastUrl = location.href;
 
-// Initial setup on page load
-function setup() {
-  console.log("[FB Helper] Running setup...");
-  onPageChange();
-}
-
-setup();
-
-// Observe URL changes
 const urlObserver = new MutationObserver(() => {
   if (location.href !== lastUrl) {
     lastUrl = location.href;
@@ -18,74 +10,10 @@ const urlObserver = new MutationObserver(() => {
     onPageChange();
   }
 });
-
 urlObserver.observe(document, { subtree: true, childList: true });
 
-// Main logic to add/remove button based on URL
-function onPageChange() {
-  const isListingPage = location.href.includes("/marketplace/item/");
-  const existingButton = document.querySelector(".fb-copy-button");
+// 2. Utility functions
 
-  console.log(`[FB Helper] onPageChange triggered. isListingPage: ${isListingPage}, buttonExists: ${!!existingButton}`);
-
-  if (isListingPage && !existingButton) {
-    console.log("[FB Helper] Waiting for Message button...");
-    observeForMessageButton((fallback) => {
-      console.log("[FB Helper] Creating copy button..." + (fallback ? " (floating fallback)" : ""));
-      createButton(location.href, fallback);
-    });
-  } else if (!isListingPage && existingButton) {
-    console.log("[FB Helper] Removing existing copy button...");
-    existingButton.remove();
-  } else {
-    console.log("[FB Helper] No action needed onPageChange.");
-  }
-}
-
-// Create the floating copy button with clipboard functionality
-function createButton(url, forceFloating = false) {
-  console.log("[FB Helper] Inside createButton function.");
-
-  const button = document.createElement("button");
-  button.className = "fb-copy-button";
-  button.type = "button";
-  button.setAttribute("title", "Copy Marketplace Link");
-
-  // Try to place inline next to "Message" button unless forced to float
-  if (!forceFloating && placeCopyBtnNextToMsgBtn(button)) {
-    console.log("[FB Helper] Button added to the page (inline).");
-  } else {
-    document.body.appendChild(button);
-    button.classList.add("fb-copy-button-floating");
-    console.log("[FB Helper] Button added to the page (floating).");
-  }
-
-  button.onclick = () => {
-    console.log("[FB Helper] Copy button clicked.");
-    button.disabled = true;
-
-    const media = getLargestVisibleMedia();
-
-    if (!media) {
-      console.warn("[FB Helper] No visible media found to copy.");
-      button.disabled = false;
-      return;
-    }
-
-    // Extract base URL up to /item/123/
-    const match = url.match(/^(https:\/\/www\.facebook\.com\/marketplace\/item\/\d+\/)/);
-    const baseUrl = match ? match[1] : url;
-
-    let text = `<${baseUrl}>\n-# [Media](${media.src})`;
-
-    navigator.clipboard.writeText(text).then(() => {
-      console.log("[FB Helper] Text copied to clipboard:", text);
-      setTimeout(() => {
-        button.disabled = false;
-      }, 2000);
-    });
-  };
-}
 
 // Returns true if inline placement succeeded, false otherwise
 function placeCopyBtnNextToMsgBtn(svg) {
@@ -139,6 +67,52 @@ function getLargestVisibleMedia() {
   }
 }
 
+// 3. Core logic functions
+// Create the floating copy button with clipboard functionality
+function createButton(url, forceFloating = false) {
+  console.log("[FB Helper] Inside createButton function.");
+
+  const button = document.createElement("button");
+  button.className = "fb-copy-button";
+  button.type = "button";
+  button.setAttribute("title", "Copy Marketplace Link");
+
+  // Try to place inline next to "Message" button unless forced to float
+  if (!forceFloating && placeCopyBtnNextToMsgBtn(button)) {
+    console.log("[FB Helper] Button added to the page (inline).");
+  } else {
+    document.body.appendChild(button);
+    button.classList.add("fb-copy-button-floating");
+    console.log("[FB Helper] Button added to the page (floating).");
+  }
+
+  button.onclick = () => {
+    console.log("[FB Helper] Copy button clicked.");
+    button.disabled = true;
+
+    const media = getLargestVisibleMedia();
+
+    if (!media) {
+      console.warn("[FB Helper] No visible media found to copy.");
+      button.disabled = false;
+      return;
+    }
+
+    // Extract base URL up to /item/123/
+    const match = url.match(/^(https:\/\/www\.facebook\.com\/marketplace\/item\/\d+\/)/);
+    const baseUrl = match ? match[1] : url;
+
+    let text = `<${baseUrl}>\n-# [Media](${media.src})`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      console.log("[FB Helper] Text copied to clipboard:", text);
+      setTimeout(() => {
+        button.disabled = false;
+      }, 2000);
+    });
+  };
+}
+
 function observeForMessageButton(callback, timeoutMs = 10000) {
   // TEMP: Always trigger fallback for testing
   // callback(true); // true = fallback to floating
@@ -168,5 +142,51 @@ function observeForMessageButton(callback, timeoutMs = 10000) {
 
   observer.observe(document.body, { childList: true, subtree: true });
 }
+
+// 4. Event handler functions
+// Main logic to add/remove button based on URL
+function onPageChange() {
+  const isListingPage = location.href.includes("/marketplace/item/");
+  const existingButton = document.querySelector(".fb-copy-button");
+
+  console.log(`[FB Helper] onPageChange triggered. isListingPage: ${isListingPage}, buttonExists: ${!!existingButton}`);
+
+  if (isListingPage && !existingButton) {
+    console.log("[FB Helper] Waiting for Message button...");
+    observeForMessageButton((fallback) => {
+      console.log("[FB Helper] Creating copy button..." + (fallback ? " (floating fallback)" : ""));
+      createButton(location.href, fallback);
+    });
+  } else if (!isListingPage && existingButton) {
+    console.log("[FB Helper] Removing existing copy button...");
+    existingButton.remove();
+  } else {
+    console.log("[FB Helper] No action needed onPageChange.");
+  }
+}
+
+
+
+
+// 5. Initialization/setup
+function setup() {
+  console.log("[FB Helper] Running setup...");
+  onPageChange();
+}
+
+// 6. Initial setup call
+console.log("[FB Helper] Content script loaded");
+setup();
+
+
+
+
+
+
+
+
+
+
+
 
 
