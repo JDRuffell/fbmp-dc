@@ -1,20 +1,9 @@
 // ==UserScript== or extension content script
 
 // 1. Constants and configuration
-let lastUrl = location.href;
 
-const urlObserver = new MutationObserver(() => {
-  if (location.href !== lastUrl) {
-    lastUrl = location.href;
-    console.log("[FB Helper] URL changed to", lastUrl);
-    onPageChange();
-  }
-});
-urlObserver.observe(document, { subtree: true, childList: true });
 
 // 2. Utility functions
-
-
 // Returns true if inline placement succeeded, false otherwise
 function placeCopyBtnNextToMsgBtn(svg) {
   const messageDiv = document.querySelector('div[aria-label="Message"]');
@@ -169,14 +158,41 @@ function onPageChange() {
 
 
 // 5. Initialization/setup
-function setup() {
-  console.log("[FB Helper] Running setup...");
-  onPageChange();
+function init() {
+  console.log("[FB Helper] Initializing content script...");
+
+  initUrlChangeListeners();
+
+  console.log("[FB Helper] Initialization complete. Waiting for page changes...");
+}
+
+// Initializes listeners for url changes
+function initUrlChangeListeners() {
+  console.log("[FB Helper] Initializing URL change listeners...");
+
+  // Monkey-patch for methods that change the URL
+  ['pushState', 'replaceState'].forEach(function (method) {
+    // Copy the original method
+    const original = history[method];
+    // Patch it to to call our function but perserve the original output
+    history[method] = function () {
+      console.log("[FB Helper] URL change detected via", method);
+      onPageChange();
+      return original.apply(this, arguments);
+    };
+  });
+
+  // Listen for navigation events that change the URL
+  window.addEventListener('popstate', function () {
+    console.log("[FB Helper] URL change detected via popstate");
+    onPageChange();
+  });
+
+  console.log("[FB Helper] URL change listeners initialized.");
 }
 
 // 6. Initial setup call
-console.log("[FB Helper] Content script loaded");
-setup();
+init();
 
 
 
